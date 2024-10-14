@@ -53,7 +53,7 @@ resource "aws_instance" "fkemedicure" {
   ami             = "ami-00f251754ac5da7f0"
   instance_type = "t2.micro"
   key_name = "ansible_key"
-  vpc_security_group_ids = [aws_security_group.fkemedicure01.id]
+  vpc_security_group_ids = [aws_security_group.sg_fkemedicure01.id]
   tags = {
     Name = "fkemedicure"
   }
