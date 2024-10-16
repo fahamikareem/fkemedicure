@@ -1,6 +1,6 @@
 ---
 - name: Configure Docker on EC2 Instances
-  hosts: all
+  hosts: aws_fkemedicure
   become: true
   tasks: 
     - name: Update apt package index
