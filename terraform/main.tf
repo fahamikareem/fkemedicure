@@ -12,8 +12,8 @@ provider "aws" {
 }
 
 # Security Group to allow SSH, HTTP, K8S, and other ports
-resource "aws_security_group" "sg_fkemedicure01" {
-  name        = "sg_fkemedicure01"
+resource "aws_security_group" "sg_fkemedicure02" {
+  name        = "sg_fkemedicure02"
   description = "Allow SSH, HTTP, and range 8080-8099"
 
   # Allow SSH (port 22)
@@ -62,7 +62,7 @@ resource "aws_instance" "fkemedicure_k8s_master" {
   ami             = "ami-005fc0f236362e99f"
   instance_type = "t2.micro"
   key_name = "ansible_key"
-  vpc_security_group_ids = [aws_security_group.sg_fkemedicure01.id]
+  vpc_security_group_ids = [aws_security_group.sg_fkemedicure02.id]
   tags = {
     Name = "fkemedicure_k8s_master"
   }
@@ -72,7 +72,7 @@ resource "aws_instance" "fkemedicure_k8s_worker01" {
   ami             = "ami-005fc0f236362e99f"
   instance_type = "t2.micro"
   key_name = "ansible_key"
-  vpc_security_group_ids = [aws_security_group.sg_fkemedicure01.id]
+  vpc_security_group_ids = [aws_security_group.sg_fkemedicure02.id]
   tags = {
     Name = "fkemedicure_k8s_worker01"
   }
@@ -82,7 +82,7 @@ resource "aws_instance" "fkemedicure_k8s_worker02" {
   ami             = "ami-005fc0f236362e99f"
   instance_type = "t2.micro"
   key_name = "ansible_key"
-  vpc_security_group_ids = [aws_security_group.sg_fkemedicure01.id]
+  vpc_security_group_ids = [aws_security_group.sg_fkemedicure02.id]
   tags = {
     Name = "fkemedicure_k8s_worker02"
   }
