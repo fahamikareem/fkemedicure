@@ -14,14 +14,13 @@
         state: present
 
     - name: Add Kubernetes apt repository
-      shell: |
-        echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-$(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kubernetes.list
-      args:
-        creates: /etc/apt/sources.list.d/kubernetes.list
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-jammy main"
+        state: present
 
     - name: Update apt cache
       apt:
-        update_cache: yes  # This ensures the cache is updated after adding the repo.
+        update_cache: yes
 
     - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
       apt:
