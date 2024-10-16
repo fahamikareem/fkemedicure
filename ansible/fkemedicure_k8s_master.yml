@@ -1,0 +1,63 @@
+---
+- hosts: k8s_master
+  become: yes
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Add Kubernetes apt-key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add Kubernetes apt repository
+      apt_repository:
+        repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+
+    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
+      apt:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+        update_cache: yes
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: started
+
+    - name: Initialize Kubernetes master
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_init
+
+    - name: Create .kube directory for Jenkins user
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        mode: 0755
+
+    - name: Copy admin.conf to user .kube directory
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
+        mode: 0644
+
+    - name: Set up network for Kubernetes cluster
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/ubuntu/.kube/config
+
+    - name: Save Kubernetes join command to file
+      shell: "kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh"
+      args:
+        creates: /home/ubuntu/kube_join_command.sh
