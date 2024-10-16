@@ -1,26 +1,7 @@
+---
 - hosts: aws_fkemedicure_k8s_master
   become: yes
   tasks:
-    - name: Install Docker prerequisites
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        state: present
-        update_cache: yes
-
-    - name: Add Docker’s official GPG key
-      shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-    
-    - name: Add Docker APT repository
-      shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-
-    - name: Update apt cache after adding Docker repo
-      apt:
-        update_cache: yes
-
     - name: Install Docker
       apt:
         name: docker.io
@@ -32,11 +13,55 @@
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
 
-    - name: Add Kubernetes repository manually
+    - name: Add Kubernetes apt repository
       shell: |
-        os_codename=$(lsb_release -cs)
-        echo "deb [trusted=yes] http://apt.kubernetes.io/ kubernetes-$os_codename main" | tee /etc/apt/sources.list.d/kubernetes.list
+        echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-$(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kubernetes.list
+      args:
+        creates: /etc/apt/sources.list.d/kubernetes.list
 
     - name: Update apt cache
       apt:
-        update_cache: yes
+        update_cache: yes  # This ensures the cache is updated after adding the repo.
+
+    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
+      apt:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: started
+
+    - name: Initialize Kubernetes master
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_init
+
+    - name: Create .kube directory for Jenkins user
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        mode: 0755
+
+    - name: Copy admin.conf to user .kube directory
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
+        mode: 0644
+
+    - name: Set up network for Kubernetes cluster
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/ubuntu/.kube/config
+
+    - name: Save Kubernetes join command to file
+      shell: "kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh"
+      args:
+        creates: /home/ubuntu/kube_join_command.sh
