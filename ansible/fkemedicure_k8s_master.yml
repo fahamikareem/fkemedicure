@@ -15,13 +15,10 @@
 
     - name: Add Kubernetes repository manually
       shell: echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
-      become: yes
 
     - name: Update apt cache
       apt:
-      update_cache: yes
-      become: yes
-
+        update_cache: yes
 
     - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
       apt:
