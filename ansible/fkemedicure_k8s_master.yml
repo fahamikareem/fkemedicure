@@ -13,10 +13,15 @@
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
 
-    - name: Add Kubernetes apt repository
-      apt_repository:
-        repo: "deb http://apt.kubernetes.io/ kubernetes-focal main"
-        state: present
+    - name: Add Kubernetes repository manually
+      shell: echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+      become: yes
+
+    - name: Update apt cache
+      apt:
+      update_cache: yes
+      become: yes
+
 
     - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
       apt:
