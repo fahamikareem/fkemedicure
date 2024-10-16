@@ -14,7 +14,7 @@
         state: present
 
     - name: Add Kubernetes repository manually
-      shell: echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+      shell: echo "deb [trusted=yes] http://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
 
     - name: Update apt cache
       apt:
