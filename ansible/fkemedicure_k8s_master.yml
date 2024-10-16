@@ -15,7 +15,7 @@
 
     - name: Add Kubernetes apt repository
       apt_repository:
-        repo: "deb http://apt.kubernetes.io/ kubernetes-{{ ansible_distribution_release }} main"
+        repo: "deb http://apt.kubernetes.io/ kubernetes-focal main"
         state: present
 
     - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
