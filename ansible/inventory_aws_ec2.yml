@@ -2,7 +2,9 @@ plugin: amazon.aws.aws_ec2
 regions:
   - us-east-1
 filters:
-  "tag:Name": fkemedicure
+  "tag:Name":
+    - fkemedicure
+    - fkemedicure_k8s_master
   instance-state-name: running
 strict: False
 keyed_groups:
