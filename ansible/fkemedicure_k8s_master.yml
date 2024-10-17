@@ -11,6 +11,8 @@
         systemctl enable docker
         systemctl start docker
 
+    - name: Download and install Kubernetes apt-key and repository
+  block:
     - name: Download Kubernetes apt-key
       get_url:
         url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
@@ -22,11 +24,20 @@
     - name: Add Kubernetes apt repository
       shell: |
         echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-        apt update
+      register: add_repo_result
+
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+      when: add_repo_result.changed
 
     - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
-      shell: |
-        apt install -y kubeadm kubelet kubectl
+      apt:
+        name: 
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
 
     - name: Check if Kubernetes master has already been initialized
       stat:
