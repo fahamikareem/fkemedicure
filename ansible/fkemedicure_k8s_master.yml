@@ -43,7 +43,9 @@
         creates: /home/ubuntu/kube_join_command.sh
       register: join_command_output
 
-- hosts: aws_fkemedicure_k8s_worker
+- hosts:
+    - aws_fkemedicure_k8s_worker01
+    - aws_fkemedicure_k8s_worker02
   become: yes
   tasks:
     - name: Update apt cache
