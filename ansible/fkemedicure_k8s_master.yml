@@ -1,4 +1,3 @@
-
 ---
 - hosts: aws_fkemedicure_k8s_master
   become: yes
@@ -13,12 +12,12 @@
         systemctl start docker
 
     - name: Add Kubernetes apt-key and repository
-  shell: |
-    timeout 30s curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-    timeout 60s apt update
-  args:
-    warn: false
+      shell: |
+        timeout 30s curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        timeout 60s apt update
+      args:
+        warn: false
 
     - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
       shell: |
