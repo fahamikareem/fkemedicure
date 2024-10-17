@@ -1,6 +1,7 @@
 ---
 - hosts: aws_fkemedicure_k8s_master
   become: yes
+
   tasks:
     - name: Install Docker
       apt:
@@ -8,23 +9,25 @@
         state: present
         update_cache: yes
 
-    - name: Add Kubernetes apt-key
+    - name: Add Kubernetes GPG key
       apt_key:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
 
-    - name: Add Kubernetes repository as Focal with bypass
-      shell: |
-        echo "deb [trusted=yes] http://apt.kubernetes.io/ kubernetes-focal main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    - name: Add Kubernetes repository for Focal
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-focal main
+        state: present
 
-    - name: Update apt cache with bypass
-      command: apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowUnauthenticated=true
+    - name: Update apt cache
+      apt: update_cache: yes
 
-    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl) with bypass
-      shell: |
-        apt-get install -y --allow-unauthenticated kubeadm kubelet kubectl
-      args:
-        warn: false
+    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
+      apt:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
 
     - name: Enable and start kubelet
       systemd:
@@ -36,7 +39,7 @@
       command: kubeadm init --pod-network-cidr=10.244.0.0/16
       register: kubeadm_init
 
-    - name: Create .kube directory for Jenkins user
+    - name: Create .kube directory for user
       file:
         path: /home/ubuntu/.kube
         state: directory
@@ -52,11 +55,13 @@
         mode: 0644
 
     - name: Set up network for Kubernetes cluster
-      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-      environment:
-        KUBECONFIG: /home/ubuntu/.kube/config
+      kubectl:
+        command: apply
+        kubeconfig: /home/ubuntu/.kube/config
+        content:
+          url: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
     - name: Save Kubernetes join command to file
-      shell: "kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh"
+      command: kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh
       args:
         creates: /home/ubuntu/kube_join_command.sh
