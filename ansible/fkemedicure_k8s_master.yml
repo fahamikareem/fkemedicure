@@ -30,6 +30,10 @@
       shell: |
         apt install -y kubeadm kubelet kubectl
 
+    - name: remove existing manifests
+      shell: |
+        rm -rf /etc/kubernetes/manifests/*.yaml
+
     - name: Initialize Kubernetes master
       command: kubeadm init --pod-network-cidr=10.244.0.0/16
       register: kubeadm_init_output
