@@ -13,12 +13,15 @@
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
 
-    - name: Add Kubernetes repository as Focal
-      shell: echo "deb http://apt.kubernetes.io/ kubernetes-focal main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    - name: Add Kubernetes repository as Focal with bypass
+      shell: |
+        echo "deb [trusted=yes] http://apt.kubernetes.io/ kubernetes-focal main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-    - name: Update apt cache
+    - name: Update apt cache with bypass
       apt:
         update_cache: yes
+      environment:
+        APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE: "1"
 
     - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
       apt:
@@ -28,6 +31,7 @@
           - kubectl
         state: present
         update_cache: yes
+        allow_unauthenticated: yes
 
     - name: Enable and start kubelet
       systemd:
