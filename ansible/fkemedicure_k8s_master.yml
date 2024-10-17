@@ -1,68 +1,29 @@
 ---
 - hosts: aws_fkemedicure_k8s_master
   become: yes
-
   tasks:
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
+    - name: Update apt and install Docker
+      shell: |
+        sudo apt update && \
+        sudo apt install docker.io -y && \
+        sudo systemctl enable docker && \
+        sudo systemctl start docker
 
-    - name: Add Kubernetes GPG key
-      apt_key:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        state: present
+    - name: Add Kubernetes apt repository key
+      shell: |
+        sudo mkdir -p /etc/apt/keyrings && \
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-    - name: Add Kubernetes repository for Focal
-      apt_repository:
-        repo: deb https://apt.kubernetes.io/ kubernetes-focal main
-        state: present
+    - name: Add Kubernetes apt repository
+      shell: |
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-    - name: Update apt cache
-      apt: 
-        update_cache: yes
+    - name: Update apt cache and install Kubernetes components
+      shell: |
+        sudo apt update && \
+        sudo apt install -y kubeadm kubelet kubectl
 
-    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
-      apt:
-        name:
-          - kubeadm
-          - kubelet
-          - kubectl
-
-    - name: Enable and start kubelet
-      systemd:
-        name: kubelet
-        enabled: yes
-        state: started
-
-    - name: Initialize Kubernetes master
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16
-      register: kubeadm_init
-
-    - name: Create .kube directory for user
-      file:
-        path: /home/ubuntu/.kube
-        state: directory
-        owner: ubuntu
-        mode: 0755
-
-    - name: Copy admin.conf to user .kube directory
-      copy:
-        src: /etc/kubernetes/admin.conf
-        dest: /home/ubuntu/.kube/config
-        remote_src: yes
-        owner: ubuntu
-        mode: 0644
-
-    - name: Set up network for Kubernetes cluster
-      kubectl:
-        command: apply
-        kubeconfig: /home/ubuntu/.kube/config
-        content:
-          url: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-
-    - name: Save Kubernetes join command to file
-      command: kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh
-      args:
-        creates: /home/ubuntu/kube_join_command.sh
+    - name: Enable and start kubelet service
+      shell: |
+        sudo systemctl enable kubelet && \
+        sudo systemctl start kubelet
