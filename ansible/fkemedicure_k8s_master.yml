@@ -18,24 +18,24 @@
         mode: '0644'
         timeout: 60
         validate_certs: yes
-      become: yes
 
     - name: Add Kubernetes apt repository
       shell: |
         echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
         apt update
-      become: yes
 
     - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
       shell: |
         apt install -y kubeadm kubelet kubectl
 
-    - name: remove existing manifests
-      shell: |
-        rm -rf /etc/kubernetes/manifests/*.yaml
+    - name: Check if Kubernetes master has already been initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubernetes_master_initialized
 
     - name: Initialize Kubernetes master
       command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      when: not kubernetes_master_initialized.stat.exists
       register: kubeadm_init_output
 
     - name: Configure kubectl for Jenkins user
@@ -43,17 +43,17 @@
         mkdir -p /home/ubuntu/.kube
         cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
         chown ubuntu:ubuntu /home/ubuntu/.kube/config
+      when: not kubernetes_master_initialized.stat.exists
 
     - name: Set up Flannel network
       command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
       environment:
         KUBECONFIG: /home/ubuntu/.kube/config
+      when: not kubernetes_master_initialized.stat.exists
 
-    - name: Save join command to file for worker nodes
-      shell: |
-        kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh
-      args:
-        creates: /home/ubuntu/kube_join_command.sh
+    - name: Capture Kubernetes join command for worker nodes
+      shell: kubeadm token create --print-join-command
+      when: not kubernetes_master_initialized.stat.exists
       register: join_command_output
 
 - hosts:
@@ -70,21 +70,15 @@
         systemctl enable docker
         systemctl start docker
 
-    - name: Add Kubernetes apt-key and repository
+    - name: Download and install Kubernetes apt-key and repository
       shell: |
         curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
         echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
         apt update
 
     - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
-      shell: |
-        apt install -y kubeadm kubelet kubectl
-    - name: Copy join command script from master to worker
-      copy:
-        src: /home/ubuntu/kube_join_command.sh
-        dest: /home/ubuntu/kube_join_command.sh
-        mode: '0755'
+      shell: apt install -y kubeadm kubelet kubectl
 
     - name: Join the Kubernetes cluster
-      shell: |
-        $(cat /home/ubuntu/kube_join_command.sh)
+      shell: "{{ hostvars['aws_fkemedicure_k8s_master']['join_command_output'].stdout }}"
+      when: hostvars['aws_fkemedicure_k8s_master']['join_command_output'] is defined
