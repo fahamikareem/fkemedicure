@@ -60,7 +60,7 @@ resource "aws_security_group" "sg_fkemedicure02" {
 # Create EC2 Instance- k8s Master
 resource "aws_instance" "fkemedicure_k8s_master" {
   ami             = "ami-005fc0f236362e99f"
-  instance_type = "t2.micro"
+  instance_type = "t2.medium"
   key_name = "ansible_key"
   vpc_security_group_ids = [aws_security_group.sg_fkemedicure02.id]
   tags = {
