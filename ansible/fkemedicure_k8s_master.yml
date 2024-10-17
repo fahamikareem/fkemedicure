@@ -2,28 +2,81 @@
 - hosts: aws_fkemedicure_k8s_master
   become: yes
   tasks:
-    - name: Update apt and install Docker
-      shell: |
-        sudo apt update && \
-        sudo apt install docker.io -y && \
-        sudo systemctl enable docker && \
-        sudo systemctl start docker
+    - name: Update apt cache
+      shell: apt update
+      become: yes
 
-    - name: Add Kubernetes apt repository key
+    - name: Install Docker
       shell: |
-        sudo mkdir -p /etc/apt/keyrings && \
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        apt install -y docker.io
+        systemctl enable docker
+        systemctl start docker
+      become: yes
 
-    - name: Add Kubernetes apt repository
+    - name: Add Kubernetes apt-key and repository
       shell: |
-        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update
+      become: yes
 
-    - name: Update apt cache and install Kubernetes components
+    - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
       shell: |
-        sudo apt update && \
-        sudo apt install -y kubeadm kubelet kubectl
+        apt install -y kubeadm kubelet kubectl
+      become: yes
 
-    - name: Enable and start kubelet service
+    - name: Initialize Kubernetes master
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_init_output
+
+    - name: Configure kubectl for Jenkins user
       shell: |
-        sudo systemctl enable kubelet && \
-        sudo systemctl start kubelet
+        mkdir -p /home/ubuntu/.kube
+        cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+        chown ubuntu:ubuntu /home/ubuntu/.kube/config
+      become: yes
+
+    - name: Set up Flannel network
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/ubuntu/.kube/config
+      become: yes
+
+    - name: Save join command to file for worker nodes
+      shell: |
+        kubeadm token create --print-join-command > /home/ubuntu/kube_join_command.sh
+      args:
+        creates: /home/ubuntu/kube_join_command.sh
+      become: yes
+      register: join_command_output
+
+- hosts: aws_fkemedicure_k8s_worker
+  become: yes
+  tasks:
+    - name: Update apt cache
+      shell: apt update
+      become: yes
+
+    - name: Install Docker
+      shell: |
+        apt install -y docker.io
+        systemctl enable docker
+        systemctl start docker
+      become: yes
+
+    - name: Add Kubernetes apt-key and repository
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update
+      become: yes
+
+    - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
+      shell: |
+        apt install -y kubeadm kubelet kubectl
+      become: yes
+
+    - name: Join the Kubernetes cluster
+      shell: |
+        $(cat /home/ubuntu/kube_join_command.sh)
+      become: yes
