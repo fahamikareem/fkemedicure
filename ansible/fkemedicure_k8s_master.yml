@@ -18,20 +18,13 @@
         echo "deb [trusted=yes] http://apt.kubernetes.io/ kubernetes-focal main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
     - name: Update apt cache with bypass
-      apt:
-        update_cache: yes
-      environment:
-        APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE: "1"
+      command: apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowUnauthenticated=true
 
-    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl)
-      apt:
-        name:
-          - kubeadm
-          - kubelet
-          - kubectl
-        state: present
-        update_cache: yes
-        allow_unauthenticated: yes
+    - name: Install Kubernetes packages (kubeadm, kubelet, kubectl) with bypass
+      shell: |
+        apt-get install -y --allow-unauthenticated kubeadm kubelet kubectl
+      args:
+        warn: false
 
     - name: Enable and start kubelet
       systemd:
