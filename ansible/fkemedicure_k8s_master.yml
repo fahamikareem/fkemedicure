@@ -11,8 +11,7 @@
         systemctl enable docker
         systemctl start docker
 
-    - name: Download and install Kubernetes apt-key and repository
-  block:
+   
     - name: Download Kubernetes apt-key
       get_url:
         url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
