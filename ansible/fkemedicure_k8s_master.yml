@@ -56,11 +56,10 @@
 
     - name: Service Restart Kubelet
       shell: sudo systemctl restart kubelet
-s
 
-     - name: pause a min 
-       pause:
-         seconds: 60
+    - name: pause a min 
+      pause:
+        seconds: 60
 
      
     - name: Set up Flannel network
