@@ -85,7 +85,7 @@
         systemctl enable docker
         systemctl start docker
 
-   - name: Add Kubernetes apt-key
+    - name: Add Kubernetes apt-key
       shell: |
         if [ ! -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
         timeout 30s curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg;
