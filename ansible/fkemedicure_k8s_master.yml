@@ -85,13 +85,22 @@
         systemctl enable docker
         systemctl start docker
 
-    - name: Download and install Kubernetes apt-key and repository
+   - name: Add Kubernetes apt-key
       shell: |
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        if [ ! -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
+        timeout 30s curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg;
+        fi
+      become: yes
+
+    - name: Add Kubernetes apt repository
+      shell: |
         echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-        apt update
-      args:
-        timeout: 45
+      register: add_repo_result
+
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+      when: add_repo_result.changed
 
     - name: Install Kubernetes components (kubeadm, kubelet, kubectl)
       shell: apt install -y kubeadm kubelet kubectl
