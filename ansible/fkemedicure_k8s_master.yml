@@ -58,9 +58,9 @@
       shell: sudo systemctl restart kubelet
 s
 
-    - name: Wait for a specified time (e.g., 30 seconds) to allow the pods to start
-      pause:
-        seconds: 60
+     - name: pause a min 
+       pause:
+         seconds: 60
 
      
     - name: Set up Flannel network
