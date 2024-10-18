@@ -50,7 +50,7 @@
 
     - name: Initialize Kubernetes master
       command: kubeadm init --pod-network-cidr=10.244.0.0/16
-      when: not kubernetes_master_initialized.stat.exists
+      when: not kubeadm_init_output.stat.exists
       register: kubeadm_init_output
 
     - name: Configure kubectl for Jenkins user
@@ -58,6 +58,7 @@
         mkdir -p /home/ubuntu/.kube
         cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
         chown ubuntu:ubuntu /home/ubuntu/.kube/config
+        export KUBECONFIG=/home/ubuntu/.kube/config
       when: not kubernetes_master_initialized.stat.exists
 
     - name: Set up Flannel network
