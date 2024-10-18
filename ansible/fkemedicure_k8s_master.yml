@@ -54,6 +54,11 @@
         source /etc/profile
         chmod 644 /etc/kubernetes/admin.conf
 
+    - name: Service Restart Kubelet
+      service: 
+        name: kubelet
+        state: restarted
+
     - name: Set up Flannel network
       command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
