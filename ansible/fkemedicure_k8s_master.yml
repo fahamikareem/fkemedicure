@@ -45,7 +45,6 @@
       
     - name: Initialize Kubernetes master
       command: kubeadm init --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem --pod-network-cidr=10.244.0.0/16
-      when: not kubeadm_init_output.stat.exists
       register: kubeadm_init_output
 
     - name: Configure kubectl for Jenkins user
