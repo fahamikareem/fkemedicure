@@ -59,6 +59,11 @@
         name: kubelet
         state: restarted
 
+     - name: Wait for a specified time (e.g., 30 seconds) to allow the pods to start
+       pause:
+         seconds: 50
+
+     
     - name: Set up Flannel network
       command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
