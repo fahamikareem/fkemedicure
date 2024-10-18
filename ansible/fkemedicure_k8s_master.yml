@@ -42,6 +42,12 @@
       stat:
         path: /etc/kubernetes/admin.conf
       register: kubernetes_master_initialized
+      
+    - name: Install socat
+      apt:
+        name: socat
+        state: present
+        update_cache: yes
 
     - name: Initialize Kubernetes master
       command: kubeadm init --pod-network-cidr=10.244.0.0/16
