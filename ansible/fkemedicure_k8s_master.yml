@@ -14,10 +14,15 @@
    
     - name: Add Kubernetes apt-key and repository
       shell: |
-        timeout 30s curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-        timeout 60s apt update
+        if [ ! -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
+        timeout 30s curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg;
+        fi
+        if ! grep -q "^deb .*https://pkgs.k8s.io/core:/stable:/v1.30/deb/" /etc/apt/sources.list.d/kubernetes.list 2>/dev/null; then
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list;
+        timeout 60s apt update;
+        fi
       become: yes
+
 
 
     - name: Add Kubernetes apt repository
