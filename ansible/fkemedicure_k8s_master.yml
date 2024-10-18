@@ -48,14 +48,11 @@
       when: not kubernetes_master_initialized.stat.exists
       register: kubeadm_init_output
 
-    - name: Configure kubectl for Jenkins user
+    - name: Config File Access
       shell: |
-        mkdir -p /home/ubuntu/.kube
-        cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
-        chown ubuntu:ubuntu /home/ubuntu/.kube/config
-      environment:
-        KUBECONFIG: /home/ubuntu/.kube/config
-      when: not kubernetes_master_initialized.stat.exists
+        echo export KUBECONFIG=/etc/kubernetes/admin.conf >> /etc/profile
+        source /etc/profile
+        chmod 644 /etc/kubernetes/admin.conf
 
     - name: Set up Flannel network
       command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
