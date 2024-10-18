@@ -59,7 +59,7 @@
 
     - name: pause a min 
       pause:
-        seconds: 60
+        seconds: 120
 
      
     - name: Set up Flannel network
